@@ -3,7 +3,7 @@ import json
 import sqlite3
 
 def deploy_wsgi_interface(environ, start_response):
-	respone = "Id App Not found"
+	respone = "Invalid id"
 	status = '404 Not Found'
 	idApp = 0
 	try:
@@ -14,7 +14,7 @@ def deploy_wsgi_interface(environ, start_response):
 	if environ["REQUEST_METHOD"] == 'POST' and environ["wsgi.input"]:
 		request_body = environ["wsgi.input"].read(request_body_size)
 		data = json.loads(request_body)
-		idApp = data["idApp"]
+		idApp = data["appName"]
 		infoApp = getInfoApp(idApp)
 		if infoApp == None:
 			start_new_docker(idApp)
@@ -31,7 +31,8 @@ def start_new_docker(idApp):
 	client = docker.from_env()
 	global lastport
 	lastport = lastport + 1
-	container = client.containers.run('vktestapp', ports={'8080/tcp': lastport}, detach=True)
+	str_env = "APP_Name=" + str(idApp)
+	container = client.containers.run('vktestapp', ports={'8080/tcp': lastport}, detach=True, environment=[str_env])
 	setInfoApp(idApp, lastport, container.id)
 
 def restart_docker(idApp, containerId):
@@ -43,7 +44,8 @@ def restart_docker(idApp, containerId):
 	except Exception:
 		global lastport
 		lastport = lastport + 1
-		container = client.containers.run('vktestapp', ports={'8080/tcp': lastport}, detach=True)
+		str_env = "APP_Name=" + str(idApp)
+		container = client.containers.run('vktestapp', ports={'8080/tcp': lastport}, detach=True, environment=[str_env])
 		updateInfoApp(idApp, lastport, container.id)
 
 
